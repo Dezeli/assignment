@@ -11,7 +11,7 @@
 #define STUDENT_ID 202224210 // Don't modify
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR(TBD);
+MODULE_AUTHOR("Minseong Park");
 MODULE_DESCRIPTION("Hello Kernel ioctl example (IO/IOR/IOW/IOWR + ABI)");
 MODULE_VERSION("0.1");
 
@@ -107,7 +107,7 @@ static int __init hello_init(void) {
         return ret;
     }
 
-    _class = class_create(THIS_MODULE, CLASS_NAME);
+    _class = class_create(CLASS_NAME);
     if (IS_ERR(_class)) {
         pr_err("hello_kernel: class_create failed\n");
         cdev_del(&_cdev);
