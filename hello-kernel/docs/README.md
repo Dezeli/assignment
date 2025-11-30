@@ -112,3 +112,38 @@ make clean
 가 제거됩니다. (이미 로드된 모듈은 `sudo rmmod hello_kernel`으로 먼저 내린 뒤 `make clean` 을 실행하세요.)
 
 <!-- ## Optional. _IOWR 명세는 이 아래에 작성할 것 -->
+## 7. 커널 모듈의 데이터 구조 및 I/O 설명
+커널 모듈과 유저 프로그램 간의 통신을 위해 _IOWR 기반의 IOCTL 인터페이스를 설계하였습니다.
+
+### 7.1 데이터 구조 정의
+커널과 데이터 교환을 위한 패킷 구조체는 다음과 같습니다.
+(abi.h 파일에 추가하였습니다.)
+
+struct student_packet {
+    int input;   // 유저 프로그램에서 전달하는 입력 값
+    int output;  // 커널이 계산하여 유저에게 다시 돌려주는 값
+};
+
+### 7.2 IOCTL 명령 번호
+본 과제에서는 하나의 IOCTL 명령을 사용하였습니다.
+IOCTL_EXCHANGE : 유저가 전달한 값을 커널이 처리하여 다시 반환하는 기능
+
+명령 번호는 _IOWR 매크로로 정의되어 있으며,
+유저와 커널 모두 동일한 헤더 파일을 사용합니다.
+#define IOCTL_EXCHANGE _IOWR(IOCTL_MAGIC, 4, struct student_packet)
+
+### 7.3 동작 방식 (입·출력 규칙)
+유저 프로그램은 다음 순서로 동작합니다:
+1.유저 프로그램이 kernel_packet 구조체의 input 필드에 임의의 정수를 채워서 커널로 전달합니다.
+2.커널 모듈은 해당 구조체를 받아 pkt.output = pkt.input;와 같이 처리합니다.
+즉, 입력값을 그대로 output에 복사하는 단순 "echo" 동작입니다.
+3.커널은 변경된 구조체를 다시 유저 프로그램에게 반환합니다.
+4.유저 프로그램은 반환된 값을 출력합니다.
+
+### 7.4 예시 흐름
+유저가 다음과 같이 입력한 경우:
+input = 123
+커널이 반환하는 값:
+output = 123
+커널 로그(dmesg)에도 아래와 같은 메시지가 기록됩니다.
+hello_kernel: EXCHANGE ioctl called (input=123, output=123)
