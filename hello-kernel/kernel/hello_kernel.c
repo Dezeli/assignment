@@ -49,52 +49,90 @@ static int hello_release(struct inode *inode, struct file *file) {
 }
 
 static long hello_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
+    struct student_packet pkt;
+
     switch (cmd) {
 
     case IOCTL_PRINT:    /* _IO */
-
-
-        // to be implemented
-
-
+        pr_info("hello_kernel: student id = %d\n", current_id);
         return 0;
 
     case IOCTL_GET_ID:   /* _IOR */
-
-
-        // to be implemented
-
-
+        if (copy_to_user((int __user *)arg, &current_id, sizeof(int)))
+            return -EFAULT;
+        pr_info("hello_kernel: GET_ID = %d\n", current_id);
         return 0;
 
     case IOCTL_SET_ID:   /* _IOW */
-
-
-        // to be implemented
-
-        
+        if (copy_from_user(&current_id, (int __user *)arg, sizeof(int)))
+            return -EFAULT;
+        pr_info("hello_kernel: SET_ID = %d\n", current_id);
         return 0;
 
-    // case ... : /* _IOWR */
+    case IOCTL_EXCHANGE: /* _IOWR */
+        if (copy_from_user(&pkt, (void __user *)arg, sizeof(pkt)))
+            return -EFAULT;
 
+        pkt.output = pkt.input;
 
-    //     return 0;
+        pr_info("hello_kernel: EXCHANGE input=%d output=%d\n",
+                pkt.input, pkt.output);
+
+        if (copy_to_user((void __user *)arg, &pkt, sizeof(pkt)))
+            return -EFAULT;
+
+        return 0;
 
     default:
-
-        return -ENOTTY; /* 지원하지 않는 ioctl */
-
+        return -ENOTTY;
     }
 }
 
+
 static int __init hello_init(void) {
 
-    // to be implemented
+    int ret;
 
+    ret = alloc_chrdev_region(&_dev, 0, 1, DEVICE_NAME);
+    if (ret < 0) {
+        pr_err("hello_kernel: alloc_chrdev_region failed\n");
+        return ret;
+    }
+
+    cdev_init(&_cdev, &_fops);
+    ret = cdev_add(&_cdev, _dev, 1);
+    if (ret < 0) {
+        pr_err("hello_kernel: cdev_add failed\n");
+        unregister_chrdev_region(_dev, 1);
+        return ret;
+    }
+
+    _class = class_create(THIS_MODULE, CLASS_NAME);
+    if (IS_ERR(_class)) {
+        pr_err("hello_kernel: class_create failed\n");
+        cdev_del(&_cdev);
+        unregister_chrdev_region(_dev, 1);
+        return PTR_ERR(_class);
+    }
+
+    if (IS_ERR(device_create(_class, NULL, _dev, NULL, DEVICE_NAME))) {
+        pr_err("hello_kernel: device_create failed\n");
+        class_destroy(_class);
+        cdev_del(&_cdev);
+        unregister_chrdev_region(_dev, 1);
+        return -1;
+    }
+
+    pr_info("hello_kernel: module loaded\n");
+    return 0;
 }
 
 static void __exit hello_exit(void) {
 
-    // to be implemented
+    device_destroy(_class, _dev);
+    class_destroy(_class);
+    cdev_del(&_cdev);
+    unregister_chrdev_region(_dev, 1);
 
+    pr_info("hello_kernel: module unloaded\n");
 }

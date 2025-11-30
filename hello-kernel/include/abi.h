@@ -16,6 +16,12 @@
 #define IOCTL_PRINT _IO(IOCTL_MAGIC, 1)
 #define IOCTL_GET_ID _IOR(IOCTL_MAGIC, 2, int)
 #define IOCTL_SET_ID _IOW(IOCTL_MAGIC, 3, int)
-//  #define IOCTL_SOMETHING _IOWR( /** args */)
+
+struct student_packet {
+    int input;
+    int output;
+};
+
+#define IOCTL_EXCHANGE _IOWR(IOCTL_MAGIC, 4, struct student_packet)
 
 #endif 
